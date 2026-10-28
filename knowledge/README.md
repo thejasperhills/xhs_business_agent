@@ -5,3 +5,5 @@
 | 日期 | 文件 | 篇数 |
 | --- | --- | --- |
 | 2026-10-28 | [knowledge_261028.md](./knowledge_261028.md) | 140 |
+
+写新稿时读 [internalized.md](./internalized.md)，不把当天原文整篇塞进上下文。
