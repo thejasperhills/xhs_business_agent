@@ -69,6 +69,14 @@ def append_text_blocks(lines: list[str], text: str) -> None:
         lines.append("")
 
 
+def knowledge_stem(date_label: str) -> str:
+    """Turn 2026-10-28 into knowledge_261028."""
+    year, month, day = date_label.split("-")
+    if len(year) != 4 or len(month) != 2 or len(day) != 2:
+        raise ValueError(f"date must be YYYY-MM-DD, got {date_label}")
+    return f"knowledge_{year[2:]}{month}{day}"
+
+
 def convert(docx_path: Path, out_md: Path, date_label: str, source_name: str) -> int:
     with ZipFile(docx_path) as archive:
         document = ET.fromstring(archive.read("word/document.xml"))
@@ -81,7 +89,7 @@ def convert(docx_path: Path, out_md: Path, date_label: str, source_name: str) ->
     if image_bytes:
         asset_dir = out_md.parent / "assets"
         asset_dir.mkdir(parents=True, exist_ok=True)
-        asset_name = f"{date_label}-image1.png"
+        asset_name = f"{knowledge_stem(date_label)}-image1.png"
         (asset_dir / asset_name).write_bytes(image_bytes)
         asset_rel = f"assets/{asset_name}"
 
@@ -110,7 +118,7 @@ def convert(docx_path: Path, out_md: Path, date_label: str, source_name: str) ->
                         "",
                         f"- 日期：{date_label}",
                         f"- 来源：桌面 `{source_name}`（作者自有成稿）",
-                        "- 归档规则：一天一篇 Markdown，日内多篇贴文用二级标题分隔",
+                        "- 归档规则：一天一篇 Markdown，文件名 `knowledge_YYMMDD`，日内多篇贴文用二级标题分隔",
                         "",
                     ]
                 )
@@ -157,17 +165,22 @@ def convert(docx_path: Path, out_md: Path, date_label: str, source_name: str) ->
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("docx")
-    parser.add_argument("out_md")
-    parser.add_argument("--date", required=True)
+    parser.add_argument(
+        "out_dir",
+        nargs="?",
+        default="knowledge",
+        help="Directory for knowledge_YYMMDD.md (default: knowledge)",
+    )
+    parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     args = parser.parse_args()
     docx_path = Path(args.docx)
-    out_md = Path(args.out_md)
+    out_md = Path(args.out_dir) / f"{knowledge_stem(args.date)}.md"
     count = convert(docx_path, out_md, args.date, docx_path.name)
     readme = out_md.parent / "README.md"
     readme.write_text(
         (
             "# 商业号知识库\n\n"
-            "按天归档作者自有成稿。一天一个 Markdown，当天多篇贴文写在同一文件里，用二级标题分隔。\n\n"
+            "按天归档作者自有成稿。一天一个 Markdown，文件名 `knowledge_YYMMDD.md`。当天多篇贴文写在同一文件里，用二级标题分隔。\n\n"
             "| 日期 | 文件 | 篇数 |\n"
             "| --- | --- | --- |\n"
             f"| {args.date} | [{out_md.name}](./{out_md.name}) | {count} |\n"
